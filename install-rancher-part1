@@ -1,0 +1,61 @@
+#!/bin/bash
+
+###########################################################
+# variables
+###########################################################
+USER="rancher"
+HOSTNAMES=("rke-m1" "rke-w1" "rke-w2")
+
+echo "Wat is het IP-adres van de huidige VM:"
+read IPMASTER
+echo "Wat is het IP-adres van Node2:"
+read IPNODE2
+echo "Wat is het IP-adres van Node3:"
+read IPNODE3
+echo "als IPMASTER is $IPMASTER ingevuld"
+
+###########################################################
+# genereer ssh-key voor huidige non-root user voor toegang met ssh tot cluster
+###########################################################
+
+ssh-keygen
+
+#transfering public key to master on user rancher
+ssh-copy-id -i ~/.ssh/id_rsa.pub $USER@$IPMASTER
+echo -e "\n\n ssh-keys geinstalleerd op Master \n\n"
+
+#transfering public key to worker1 on user rancher
+ssh-copy-id -i ~/.ssh/id_rsa.pub $USER@$IPNODE2
+echo -e "\n\n ssh-keys geinstalleerd op worker1 \n\n"
+
+#transfering public key to worker2 on user rancher
+ssh-copy-id -i ~/.ssh/id_rsa.pub $USER@$IPNODE3
+echo -e "\n\n ssh-keys geinstalleerd op worker2 \n\n"
+
+###########################################################
+# Configureren van de nodes
+###########################################################
+COUNTER=0
+for HOST in $IPMASTER $IPNODE2 $IPNODE3
+do
+    ssh -t $USER@$HOST "sudo yum check-update"
+	ssh -t $USER@$HOST "sudo curl https://releases.rancher.com/install-docker/20.10.sh | sh"
+
+    #swapoff
+    ssh -t $USER@$HOST "sudo swapoff -a"
+
+    #add user to group docker
+    ssh -t $USER@$HOST "sudo usermod -aG docker $USER"
+    ssh -t $USER@$HOST "sudo systemctl enable docker"
+    
+    #stop firewall
+    ssh -t $USER@$HOST "sudo systemctl stop firewalld"
+    ssh -t $USER@$HOST "sudo systemctl disable firewalld"
+
+    #changing hostname
+    ssh -t $USER@$HOST "sudo hostnamectl set-hostname ${HOSTNAMES[$COUNTER]}"
+
+    #restart docker
+    ssh -t $USER@$HOST "sudo systemctl restart docker"
+    let COUNTER++
+done
