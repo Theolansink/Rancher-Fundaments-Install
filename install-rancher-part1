@@ -55,7 +55,12 @@ do
     #changing hostname
     ssh -t $USER@$HOST "sudo hostnamectl set-hostname ${HOSTNAMES[$COUNTER]}"
 
+    #add targetcli for longhorn to create volume claim.
+    ssh -t $USER@$HOST "sudo yum install targetcli -y"
+    ssh -t $USER@$HOST "sudo yum -y install iscsi-initiator-utils"
+
     #restart docker
     ssh -t $USER@$HOST "sudo systemctl restart docker"
     let COUNTER++
+
 done
