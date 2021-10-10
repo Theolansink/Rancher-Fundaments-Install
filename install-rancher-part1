@@ -59,6 +59,9 @@ do
     ssh -t $USER@$HOST "sudo yum install targetcli -y"
     ssh -t $USER@$HOST "sudo yum -y install iscsi-initiator-utils"
 
+    #add ip NODE2 (myrancher.com) to /etc/hosts
+    ssh -t $USER@HOST "sudo sh -c 'echo "$IPNODE2 myrancher.com" >> /etc/hosts'"
+
     #restart docker
     ssh -t $USER@$HOST "sudo systemctl restart docker"
     let COUNTER++
